@@ -1,0 +1,18 @@
+No contracts to compile
+No Solidity tests to compile
+
+Running Solidity tests
+
+
+Running node:test tests
+
+  PatientsRegistry
+    ✔ Should register a new patient
+    ✔ Should emit PatientRegistered event
+    ✔ Should add and retrieve a medical record
+    ✔ Should prevent duplicate registration
+    ✔ Should prevent unregistered users from adding records
+
+
+5 passing (5 nodejs)
+

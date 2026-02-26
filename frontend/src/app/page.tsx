@@ -1,201 +1,220 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getContractInstance, getCurrentAddress, CONTRACT_CHAIN_ID, promptAccountSwitch } from "@/lib/contract";
+import { getContractInstance, CONTRACT_CHAIN_ID } from "@/lib/contract";
+
+declare global { interface Window { ethereum?: any; } }
 
 export default function HomePage() {
   const router = useRouter();
   const [status, setStatus] = useState("");
-  const [form, setForm] = useState({ name: "", dob: "", bloodType: "A+", gender: "" });
+  const [view, setView] = useState<"role" | "patient-register" | "hospital-register">("role");
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState("check"); // check | register | login
+  const [pForm, setPForm] = useState({ name: "", dob: "", bloodType: "A+", gender: "" });
+  const [hForm, setHForm] = useState({ name: "", type: "Hospital", location: "", registrationId: "" });
 
-  // On load, check if already registered, unless they just signed out
   useEffect(() => {
-    if (sessionStorage.getItem("disconnected") !== "true") {
-      checkNetwork();
-    } else {
-      setView("register");
-    }
-
-    // Automatically reload if they change account in extension
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', () => window.location.reload());
+      window.ethereum.on("accountsChanged", () => {
+        sessionStorage.removeItem("disconnected");
+        window.location.reload();
+      });
     }
+    ensureNetwork();
   }, []);
 
-  async function checkNetwork() {
+  async function ensureNetwork() {
     if (!window.ethereum) { setStatus("MetaMask not detected."); return; }
     try {
       const chainId = await window.ethereum.request({ method: "eth_chainId" });
       if (parseInt(chainId, 16) !== CONTRACT_CHAIN_ID) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: `0x${CONTRACT_CHAIN_ID.toString(16)}` }],
-          });
-        } catch (switchError: any) {
-          if (switchError.code === 4902) {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: `0x${CONTRACT_CHAIN_ID.toString(16)}`,
-                chainName: 'Hardhat Local',
-                rpcUrls: ['http://127.0.0.1:8545'],
-                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }
-              }],
-            });
-          } else {
-            throw switchError;
-          }
-        }
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: `0x${CONTRACT_CHAIN_ID.toString(16)}` }],
+        });
       }
-      checkRegistration();
-    } catch (e: any) {
-      if (e.code === 4001) {
-        setStatus(`Please approve the network switch in MetaMask.`);
-      } else {
-        setStatus(`Wrong network. Please switch MetaMask to Hardhat Local (chainId ${CONTRACT_CHAIN_ID}).`);
-      }
-    }
+      await autoRedirect();
+    } catch { /* user can manually choose role */ }
   }
 
-  async function checkRegistration() {
+  async function autoRedirect() {
+    if (sessionStorage.getItem("disconnected") === "true") return;
     try {
       const { contract, address } = await getContractInstance();
-      const registered = await contract.read.isRegistered({ account: address });
-      if (registered) {
-        router.push("/dashboard");
-      } else {
-        setView("register");
-      }
-    } catch (e) {
-      setView("register");
-    }
+      const isPatient = await contract.read.isRegistered({ account: address });
+      if (isPatient) { router.push("/dashboard/patient"); return; }
+      const isHospital = await contract.read.isInstitutionRegistered({ account: address });
+      if (isHospital) { router.push("/dashboard/hospital"); return; }
+    } catch { /* not connected yet */ }
   }
 
-  async function handleRegister(e: any) {
-    sessionStorage.removeItem("disconnected");
+  async function handlePatientRegister(e: any) {
     e.preventDefault();
-    setLoading(true);
-    setStatus("");
+    setLoading(true); setStatus("");
+    sessionStorage.removeItem("disconnected");
     try {
       const { contract, publicClient, address } = await getContractInstance();
-      const dob = BigInt(Math.floor(new Date(form.dob).getTime() / 1000));
-      const hash = await contract.write.register([form.name, dob, form.bloodType, form.gender], { account: address });
-      setStatus("Waiting for transaction confirmation...");
+      const dob = BigInt(Math.floor(new Date(pForm.dob).getTime() / 1000));
+      const hash = await contract.write.register(
+        [pForm.name, dob, pForm.bloodType, pForm.gender], { account: address }
+      );
+      setStatus("Waiting for confirmation…");
       await publicClient.waitForTransactionReceipt({ hash });
-      setStatus("Registered successfully!");
-      router.push("/dashboard");
-    } catch (err) {
+      router.push("/dashboard/patient");
+    } catch (err: any) {
       setStatus("Error: " + (err.shortMessage || err.message));
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
-  async function handleLogin() {
+  async function handleHospitalRegister(e: any) {
+    e.preventDefault();
+    setLoading(true); setStatus("");
     sessionStorage.removeItem("disconnected");
-    setLoading(true);
-    setStatus("");
+    try {
+      const { contract, publicClient, address } = await getContractInstance();
+      const hash = await contract.write.registerInstitution(
+        [hForm.name, hForm.type, hForm.location, hForm.registrationId], { account: address }
+      );
+      setStatus("Waiting for confirmation…");
+      await publicClient.waitForTransactionReceipt({ hash });
+      router.push("/dashboard/hospital");
+    } catch (err: any) {
+      setStatus("Error: " + (err.shortMessage || err.message));
+    } finally { setLoading(false); }
+  }
+
+  async function handleLogin(destination: "/dashboard/patient" | "/dashboard/hospital") {
+    setLoading(true); setStatus("");
+    sessionStorage.removeItem("disconnected");
     try {
       const { contract, address } = await getContractInstance();
-      const registered = await contract.read.isRegistered({ account: address });
-      if (registered) {
-        router.push("/dashboard");
+      if (destination === "/dashboard/patient") {
+        const ok = await contract.read.isRegistered({ account: address });
+        if (ok) { router.push(destination); return; }
+        setStatus("Not registered as a patient."); setView("patient-register");
       } else {
-        setStatus("This wallet is not registered. Please register first.");
-        setView("register");
+        const ok = await contract.read.isInstitutionRegistered({ account: address });
+        if (ok) { router.push(destination); return; }
+        setStatus("Not registered as an institution."); setView("hospital-register");
       }
-    } catch (err) {
+    } catch (err: any) {
       setStatus("Error: " + (err.shortMessage || err.message));
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
-  async function handleSwitchAccount() {
+  async function handleChangeAccount() {
+    if (!window.ethereum) return;
     try {
-      await promptAccountSwitch();
-    } catch {
-      // User rejected or ignored
+      await window.ethereum.request({
+        method: "wallet_requestPermissions",
+        params: [{ eth_accounts: {} }]
+      });
+    } catch (err: any) {
+      console.log(err);
     }
   }
 
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+  const instTypes = ["Hospital", "Clinic", "Lab", "Pharmacy", "Diagnostic Centre"];
 
   return (
-    <main style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>🏥 DPHRS</h1>
-        <p style={styles.subtitle}>Decentralised Patient Health Records</p>
+    <main style={S.container}>
+      <div style={S.card}>
+        <h1 style={S.title}>🏥 DPHRS</h1>
+        <p style={S.subtitle}>Decentralised Patient Health Records</p>
 
-        {view === "check" && <p>Connecting to your wallet…</p>}
-
-        {view === "register" && (
+        {view === "role" && (
           <>
-            <h2 style={styles.h2}>Welcome to DPHRS</h2>
-            <p style={styles.note}>Your wallet works as your identity. No passwords needed.</p>
-            <form onSubmit={handleRegister} style={styles.form}>
-              <input
-                style={styles.input}
-                placeholder="Full Name"
-                required
-                value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
-              />
-              <label style={styles.label}>Date of Birth</label>
-              <input
-                style={styles.input}
-                type="date"
-                required
-                value={form.dob}
-                onChange={e => setForm({ ...form, dob: e.target.value })}
-              />
-              <select
-                style={styles.input}
-                value={form.bloodType}
-                onChange={e => setForm({ ...form, bloodType: e.target.value })}
-              >
-                {bloodTypes.map(bt => <option key={bt}>{bt}</option>)}
-              </select>
-              <select
-                style={styles.input}
-                value={form.gender}
-                required
-                onChange={e => setForm({ ...form, gender: e.target.value })}
-              >
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-              <button style={styles.btn} type="submit" disabled={loading}>
-                {loading ? "Processing…" : "Register with MetaMask"}
+            <p style={S.note}>Choose how you are connecting:</p>
+            <div style={S.roleRow}>
+              <button style={S.roleBtn} onClick={() => setView("patient-register")}>
+                👤 I&apos;m a Patient
               </button>
-            </form>
-            <p style={styles.link} onClick={handleLogin}>Already registered? Sign in →</p>
-            <p style={{ ...(styles.link as React.CSSProperties), marginTop: "0.25rem", fontSize: "0.8rem", color: "#94a3b8" }} onClick={handleSwitchAccount}>Need to change wallet? Switch MetaMask Account</p>
+              <button style={{ ...S.roleBtn, background: "#0d9488" }}
+                onClick={() => setView("hospital-register")}>
+                🏨 I&apos;m a Hospital
+              </button>
+            </div>
+            <p style={S.link} onClick={() => handleLogin("/dashboard/patient")}>
+              Already a patient? Sign in →
+            </p>
+            <p style={{ ...S.link, marginTop: "0.25rem" }}
+              onClick={() => handleLogin("/dashboard/hospital")}>
+              Institution already registered? Sign in →
+            </p>
+            <button style={{ ...S.btn, marginTop: "2rem", background: "#475569", width: "100%", fontSize: "0.85rem" }} onClick={handleChangeAccount}>
+              🔄 Dev: Change Active Account
+            </button>
           </>
         )}
 
-        {status && <p style={styles.status}>{status}</p>}
+        {view === "patient-register" && (
+          <>
+            <h2 style={S.h2}>Register as Patient</h2>
+            <form onSubmit={handlePatientRegister} style={S.form}>
+              <input style={S.input} placeholder="Full Name" required
+                value={pForm.name} onChange={e => setPForm({ ...pForm, name: e.target.value })} />
+              <label style={S.label}>Date of Birth</label>
+              <input style={S.input} type="date" required
+                value={pForm.dob} onChange={e => setPForm({ ...pForm, dob: e.target.value })} />
+              <select style={S.input} value={pForm.bloodType}
+                onChange={e => setPForm({ ...pForm, bloodType: e.target.value })}>
+                {bloodTypes.map(b => <option key={b}>{b}</option>)}
+              </select>
+              <select style={S.input} value={pForm.gender} required
+                onChange={e => setPForm({ ...pForm, gender: e.target.value })}>
+                <option value="">Select Gender</option>
+                <option>Male</option><option>Female</option><option>Other</option>
+              </select>
+              <button style={S.btn} type="submit" disabled={loading}>
+                {loading ? "Processing…" : "Register with MetaMask"}
+              </button>
+            </form>
+            <p style={S.link} onClick={() => setView("role")}>← Back</p>
+          </>
+        )}
+
+        {view === "hospital-register" && (
+          <>
+            <h2 style={S.h2}>Register Institution</h2>
+            <form onSubmit={handleHospitalRegister} style={S.form}>
+              <input style={S.input} placeholder="Institution Name" required
+                value={hForm.name} onChange={e => setHForm({ ...hForm, name: e.target.value })} />
+              <select style={S.input} value={hForm.type}
+                onChange={e => setHForm({ ...hForm, type: e.target.value })}>
+                {instTypes.map(t => <option key={t}>{t}</option>)}
+              </select>
+              <input style={S.input} placeholder="Location" required
+                value={hForm.location} onChange={e => setHForm({ ...hForm, location: e.target.value })} />
+              <input style={S.input} placeholder="Registration ID" required
+                value={hForm.registrationId} onChange={e => setHForm({ ...hForm, registrationId: e.target.value })} />
+              <button style={{ ...S.btn, background: "#0d9488" }} type="submit" disabled={loading}>
+                {loading ? "Processing…" : "Register Institution"}
+              </button>
+            </form>
+            <p style={S.link} onClick={() => setView("role")}>← Back</p>
+          </>
+        )}
+
+        {status && <p style={S.status}>{status}</p>}
       </div>
     </main>
   );
 }
 
-const styles = {
+const S: Record<string, React.CSSProperties> = {
   container: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a" },
-  card: { background: "#1e293b", padding: "2.5rem", borderRadius: "1rem", width: "100%", maxWidth: "420px", color: "#f1f5f9", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" },
+  card: { background: "#1e293b", padding: "2.5rem", borderRadius: "1rem", width: "100%", maxWidth: "440px", color: "#f1f5f9", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" },
   title: { fontSize: "2rem", fontWeight: 700, textAlign: "center", margin: 0 },
-  subtitle: { textAlign: "center", color: "#94a3b8", marginBottom: "2rem" },
+  subtitle: { textAlign: "center", color: "#94a3b8", marginBottom: "1.5rem" },
+  note: { textAlign: "center", color: "#64748b", marginBottom: "1rem", fontSize: "0.9rem" },
   h2: { fontSize: "1.2rem", marginBottom: "0.5rem" },
-  note: { fontSize: "0.85rem", color: "#64748b", marginBottom: "1.5rem" },
-  form: { display: "flex", flexDirection: "column", gap: "0.75rem" },
   label: { fontSize: "0.8rem", color: "#94a3b8" },
+  form: { display: "flex", flexDirection: "column", gap: "0.75rem" },
   input: { padding: "0.65rem 0.9rem", borderRadius: "0.5rem", border: "1px solid #334155", background: "#0f172a", color: "#f1f5f9", fontSize: "0.95rem" },
   btn: { padding: "0.75rem", background: "#3b82f6", color: "#fff", border: "none", borderRadius: "0.5rem", cursor: "pointer", fontSize: "1rem", fontWeight: 600 },
+  roleRow: { display: "flex", gap: "1rem", marginBottom: "1rem" },
+  roleBtn: { flex: 1, padding: "1rem 0.5rem", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "0.75rem", cursor: "pointer", fontSize: "0.95rem", fontWeight: 600 },
   link: { marginTop: "1rem", textAlign: "center", color: "#3b82f6", cursor: "pointer", fontSize: "0.9rem" },
-  status: { marginTop: "1rem", padding: "0.75rem", background: "#0f172a", borderRadius: "0.5rem", fontSize: "0.85rem", color: "#fbbf24" }
+  status: { marginTop: "1rem", padding: "0.75rem", background: "#0f172a", borderRadius: "0.5rem", fontSize: "0.85rem", color: "#fbbf24" },
 };

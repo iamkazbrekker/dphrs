@@ -27,7 +27,7 @@ contract PatientsRegistry {
         string name;
         string institutionType;
         string Location;
-        string registerationId;
+        string registrationId;
     }
 
     struct AccessLog {
@@ -61,7 +61,7 @@ contract PatientsRegistry {
         _;
     }
     modifier notInstitution(){
-        require(!institution[msg.sender].registered, "Institution not registered");
+        require(!institutions[msg.sender].registered, "Institution not registered");
         _;
     }
 
@@ -107,7 +107,7 @@ contract PatientsRegistry {
             addedBy: address(0)
         }));
 
-        emit RecordAdded(msg.sender, _recordType, block.timestamp);
+        emit RecordAdded(msg.sender, _recordType, address(0), block.timestamp);
     }
 
     //retreiving data for patient
@@ -138,26 +138,34 @@ contract PatientsRegistry {
         return patients[msg.sender].registered;
     }
 
-    //institution registration
     function registerInstitution(
         string calldata _name,
         string calldata _institutionType,
         string calldata _location,
         string calldata _registrationId
     ) external notInstitution{
-        require(byted(_name).length > 0, "Institution name required");
-        require(byted(_registerationId).length > 0, "Registeration ID required");
+        require(bytes(_name).length > 0, "Institution name required");
+        require(bytes(_registrationId).length > 0, "Registration ID required");
         Institution storage insti = institutions[msg.sender];
+        insti.registered = true;
         insti.name = _name;
-        isnti.institutionType = _institutionType;
-        insti.location = _location;
-        insti.registerationId = _registerationId;
+        insti.institutionType = _institutionType;
+        insti.Location = _location;
+        insti.registrationId = _registrationId;
 
         emit InstitutionRegistered(msg.sender, _name, block.timestamp);
     }
 
+    function isInstitutionRegistered() external view returns(bool){
+        return institutions[msg.sender].registered;
+    }
+
+    function getInstitutionName() external view returns(string memory){
+        return institutions[msg.sender].name;
+    }
+
     //institutions read patient data
-    function getBasicInfo(address _patient) external onlyInstitution returns(
+    function getPatientBasicInfo(address _patient) external onlyInstitution returns(
         string memory name,
         uint256 _dateOfBirth,
         string memory bloodType,
@@ -171,11 +179,26 @@ contract PatientsRegistry {
             institutionName: institutions[msg.sender].name,
             timestamp: block.timestamp,
             action: "READ"
-        }))
+        }));
         emit PatientDataAccessed(_patient, msg.sender, "READ", block.timestamp);
 
-        Patients storage p = patients[_patient];
+        Patient storage p = patients[_patient];
         return(p.name, p.dateOfBirth, p.bloodType, p.gender, p.records.length);
+    }
+
+    function getPatientRecord(address _patient, uint256 index) external view onlyInstitution returns(
+        uint256 timestamp,
+        string memory recordType,
+        string memory description,
+        string memory doctorName,
+        string memory institution,
+        address addedBy
+    ){
+        require(patients[_patient].registered, "Patient not found");
+        Patient storage p = patients[_patient];
+        require(index < p.records.length, "Index out of bounds");
+        MedicalRecord storage r = p.records[index];
+        return (r.timestamp, r.recordType, r.description, r.doctorName, r.institution, r.addedBy);
     }
 
     //institution adds data
@@ -199,13 +222,13 @@ contract PatientsRegistry {
         }));
 
         logs[_patient].push(AccessLog({
-            innstitution: msg.sender,
-            institutionName: institution[msg.sender].name,
+            institution: msg.sender,
+            institutionName: institutions[msg.sender].name,
             timestamp: block.timestamp,
             action: "WRITE"
         }));
         emit RecordAdded(_patient, _recordType, msg.sender, block.timestamp);
-        emit PatientDataAccessed(_patient, _msg.sender, "WRITE", block.timestamp);
+        emit PatientDataAccessed(_patient, msg.sender, "WRITE", block.timestamp);
     }
 
     //patient view access logs
@@ -218,10 +241,10 @@ contract PatientsRegistry {
         uint256 timestamp,
         string memory action
     ){
-        AccessLog storage al = logs[msg.sender];
-        require(index < logs.length && index >= 0, "Index out of bound");
+        AccessLog[] storage al = logs[msg.sender];
+        require(index < al.length, "Index out of bound");
         AccessLog storage log = al[index];
-        return(log.institution, l.institutionName, log.timestamp, log.action);
+        return(log.institution, log.institutionName, log.timestamp, log.action);
     }
 
 }

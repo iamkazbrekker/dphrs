@@ -1,6 +1,62 @@
 {
-  "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
   "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "institution",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "InstitutionRegistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "patient",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "institution",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "action",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "PatientDataAccessed",
+      "type": "event"
+    },
     {
       "anonymous": false,
       "inputs": [
@@ -43,6 +99,12 @@
         },
         {
           "indexed": false,
+          "internalType": "address",
+          "name": "addedBy",
+          "type": "address"
+        },
+        {
+          "indexed": false,
           "internalType": "uint256",
           "name": "timestamp",
           "type": "uint256"
@@ -82,6 +144,94 @@
     {
       "inputs": [
         {
+          "internalType": "address",
+          "name": "_patient",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_recordType",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_description",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_doctorName",
+          "type": "string"
+        }
+      ],
+      "name": "addRecordForPatient",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "getAccessLog",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "institution",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "institutionName",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "action",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAccessLogCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getInstitutionName",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "uint256",
           "name": "index",
           "type": "uint256"
@@ -113,6 +263,11 @@
           "internalType": "string",
           "name": "institution",
           "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "addedBy",
+          "type": "address"
         }
       ],
       "stateMutability": "view",
@@ -152,6 +307,94 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_patient",
+          "type": "address"
+        }
+      ],
+      "name": "getPatientBasicInfo",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_dateOfBirth",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "bloodType",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "gender",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "recordCount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_patient",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "getPatientRecord",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "recordType",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "doctorName",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "institution",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "addedBy",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "getRecordCount",
       "outputs": [
@@ -159,6 +402,19 @@
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "isInstitutionRegistered",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -201,6 +457,34 @@
         }
       ],
       "name": "register",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_name",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_institutionType",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_location",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_registrationId",
+          "type": "string"
+        }
+      ],
+      "name": "registerInstitution",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

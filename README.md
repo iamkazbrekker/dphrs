@@ -78,11 +78,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 While the current version of DPHRS provides a robust proof-of-concept for decentralized healthcare, future iterations plan to implement:
 
-1. **IPFS Integration:** Currently, simple strings are stored on-chain. Future versions will use IPFS (InterPlanetary File System) to securely store heavy files like X-Rays, MRI scans, and full PDFs off-chain while anchoring only the content hashes on-chain.
-2. **Granular Data Permissions:** Allowing patients to selectively decrypt/approve access to specific files rather than granting blanket access to an institution.
-3. **ZK-Rollups for Privacy:** Integrating Zero-Knowledge Proofs to allow hospitals to verify certain patient conditions (e.g., "Is patient vaccinated?") without actually revealing the underlying private data.
-4. **Multi-signature Security:** For sensitive operations and account recovery mechanisms.
-5. **Cross-Chain Compatibility:** Expanding beyond Ethereum to faster, low-fee networks like Polygon or Arbitrum to ensure near-zero gas costs for hospital queries.
+1. **Providing data for researchers:** Providing abstract data for research purposes.
+2. **IPFS Integration:** Currently, simple strings are stored on-chain. Future versions will use IPFS (InterPlanetary File System) to securely store heavy files like X-Rays, MRI scans, and full PDFs off-chain while anchoring only the content hashes on-chain.
+3. **Granular Data Permissions:** Allowing patients to selectively decrypt/approve access to specific files rather than granting blanket access to an institution.
+4. **ZK-Rollups for Privacy:** Integrating Zero-Knowledge Proofs to allow hospitals to verify certain patient conditions (e.g., "Is patient vaccinated?") without actually revealing the underlying private data.
+5. **Multi-signature Security:** For sensitive operations and account recovery mechanisms.
 
 ## 📄 License
 This project is licensed under the MIT License.

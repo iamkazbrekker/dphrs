@@ -65,13 +65,13 @@ export default function PatientDashboard() {
 }
 
 const S = {
-    page: { minHeight: "100vh", background: "#0f172a", color: "#f1f5f9" },
-    topbar: { display: "flex", alignItems: "center", gap: "1rem", padding: "1rem 2rem", background: "#1e293b", borderBottom: "1px solid #334155" },
-    logo: { fontWeight: 700, fontSize: "1.2rem", flex: 1 },
-    addr: { fontFamily: "monospace", fontSize: "0.85rem", color: "#94a3b8" },
-    signout: { padding: "0.4rem 0.9rem", background: "transparent", border: "1px solid #475569", color: "#94a3b8", borderRadius: "0.4rem", cursor: "pointer", fontSize: "0.85rem" },
-    content: { maxWidth: "720px", margin: "2rem auto", padding: "0 1rem" },
-    tabs: { display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" },
-    tab: { flex: 1, padding: "0.6rem 0.4rem", background: "#1e293b", border: "none", color: "#94a3b8", borderRadius: "0.5rem", cursor: "pointer", fontSize: "0.85rem", minWidth: "100px" },
-    tabActive: { flex: 1, padding: "0.6rem 0.4rem", background: "#3b82f6", border: "none", color: "#fff", borderRadius: "0.5rem", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600, minWidth: "100px" },
+    page: { minHeight: "100vh", background: "#dee6e5", color: "#1e293b", fontFamily: "'Inter', sans-serif" },
+    topbar: { display: "flex", alignItems: "center", gap: "1rem", padding: "1.2rem 2.5rem", background: "transparent" },
+    logo: { fontWeight: 700, fontSize: "1.3rem", color: "#13544a", flex: 1 },
+    addr: { fontFamily: "monospace", fontSize: "0.85rem", color: "#475569", background: "#ffffff", padding: "0.3rem 0.6rem", borderRadius: "0.4rem", border: "1px solid #e2e8f0" },
+    signout: { padding: "0.5rem 1rem", background: "#ffffff", border: "none", color: "#1e293b", borderRadius: "2rem", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600, boxShadow: "0 2px 8px rgba(0,0,0,0.03)" },
+    content: { maxWidth: "780px", margin: "1rem auto 3rem", padding: "0 1.5rem" },
+    tabs: { display: "flex", gap: "0.8rem", marginBottom: "1.5rem", flexWrap: "wrap" },
+    tab: { flex: 1, padding: "0.8rem", background: "#ffffff", border: "none", color: "#64748b", borderRadius: "1.5rem", cursor: "pointer", fontSize: "0.9rem", fontWeight: 500, minWidth: "100px", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" },
+    tabActive: { flex: 1, padding: "0.8rem", background: "#badd93", border: "none", color: "#13544a", borderRadius: "1.5rem", cursor: "pointer", fontSize: "0.9rem", fontWeight: 600, minWidth: "100px", boxShadow: "0 4px 15px rgba(186,221,147,0.25)" },
 };

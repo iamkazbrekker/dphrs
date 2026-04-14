@@ -70,15 +70,15 @@ export default function ViewRecords({ refresh }) {
 }
 
 const S = {
-    profileCard: { background: "#1e293b", padding: "1.25rem 1.5rem", borderRadius: "0.75rem", marginBottom: "1rem" },
-    h3: { margin: "0 0 0.5rem", color: "#f1f5f9", fontSize: "1.1rem" },
-    row: { display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" },
-    badge: { background: "#dc2626", color: "#fff", padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.8rem", fontWeight: 600 },
-    meta: { color: "#94a3b8", fontSize: "0.85rem" },
-    tiny: { color: "#475569", fontSize: "0.75rem" },
-    record: { background: "#0f172a", border: "1px solid #1e293b", borderRadius: "0.6rem", padding: "1rem 1.25rem", marginBottom: "0.75rem" },
-    recHeader: { display: "flex", gap: "0.5rem", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem", flexWrap: "wrap" },
-    tag: { background: "#1d4ed8", color: "#fff", padding: "0.15rem 0.5rem", borderRadius: "0.3rem", fontSize: "0.75rem", fontWeight: 600 },
-    instTag: { background: "#0d9488", color: "#fff", padding: "0.15rem 0.5rem", borderRadius: "0.3rem", fontSize: "0.72rem" },
-    desc: { color: "#e2e8f0", margin: "0.25rem 0", fontSize: "0.9rem" },
+    profileCard: { background: "#ffffff", padding: "1.5rem 1.8rem", borderRadius: "1.8rem", marginBottom: "1.5rem", boxShadow: "0 4px 15px rgba(0,0,0,0.02)" },
+    h3: { margin: "0 0 0.8rem", color: "#1e293b", fontSize: "1.1rem", fontWeight: 600 },
+    row: { display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap", marginTop: "0.5rem" },
+    badge: { background: "#badd93", color: "#13544a", padding: "0.3rem 0.8rem", borderRadius: "999px", fontSize: "0.85rem", fontWeight: 600 },
+    meta: { color: "#64748b", fontSize: "0.9rem", fontWeight: 500 },
+    tiny: { color: "#64748b", fontSize: "0.8rem", fontWeight: 500 },
+    record: { background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "1.2rem", padding: "1.2rem 1.5rem", marginBottom: "1rem", boxShadow: "0 2px 8px rgba(0,0,0,0.01)" },
+    recHeader: { display: "flex", gap: "0.75rem", justifyContent: "space-between", alignItems: "center", marginBottom: "0.8rem", flexWrap: "wrap" },
+    tag: { background: "#13544a", color: "#fff", padding: "0.25rem 0.8rem", borderRadius: "0.5rem", fontSize: "0.8rem", fontWeight: 600 },
+    instTag: { background: "#256a5c", color: "#fff", padding: "0.25rem 0.8rem", borderRadius: "0.5rem", fontSize: "0.8rem", fontWeight: 500 },
+    desc: { color: "#334155", margin: "0.5rem 0", fontSize: "0.95rem", lineHeight: 1.5 },
 };

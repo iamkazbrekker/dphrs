@@ -30,6 +30,16 @@ contract PatientsRegistry {
         string registrationId;
     }
 
+    struct Researcher {
+        bool registered;
+        string name;
+        string institution;
+        string researchField;
+        string licenseId;
+        uint256 registeredAt;
+        uint256 dataAccessCount;
+    }
+
     struct AccessLog {
         address institution;
         string institutionName;
@@ -37,15 +47,39 @@ contract PatientsRegistry {
         string action;
     }
 
+    // Anonymized record — no patient name, DOB, or wallet address
+    struct AnonymizedRecord {
+        uint256 timestamp;
+        string recordType;
+        string description;
+        string institution;
+        string bloodType;
+        string gender;
+        uint256 patientIndex; // opaque sequential ID, not a real address
+    }
+
+    struct DatasetStats {
+        uint256 totalPatients;
+        uint256 totalRecords;
+        uint256 lastUpdated;
+    }
+
     //mappings
     mapping (address => Patient) private patients;
     mapping(address => Institution) private institutions;
+    mapping(address => Researcher) private researchers;
     mapping(address => AccessLog[]) private logs;
+
+    // Internal list of all patient addresses (for researcher enumeration)
+    address[] private patientAddresses;
+    uint256 private totalRecordsCount;
 
     event PatientRegistered(address indexed patient, string name, uint256 timestamp);
     event RecordAdded(address indexed patient, string recordType, address addedBy, uint256 timestamp);
     event InstitutionRegistered(address indexed institution, string name, uint256 timestamp);
     event PatientDataAccessed(address indexed patient, address indexed institution, string action, uint256 timestamp);
+    event ResearcherRegistered(address indexed researcher, string name, string researchField, uint256 timestamp);
+    event DatasetAccessed(address indexed researcher, uint256 recordCount, uint256 timestamp);
 
 
     modifier registered(){
@@ -62,6 +96,14 @@ contract PatientsRegistry {
     }
     modifier notInstitution(){
         require(!institutions[msg.sender].registered, "Institution not registered");
+        _;
+    }
+    modifier onlyResearcher(){
+        require(researchers[msg.sender].registered, "Researcher not registered");
+        _;
+    }
+    modifier notResearcher(){
+        require(!researchers[msg.sender].registered, "Already registered as researcher");
         _;
     }
 
@@ -82,6 +124,8 @@ contract PatientsRegistry {
         p.dateOfBirth = _dateOfBirth;
         p.bloodType = _bloodType;
         p.gender = _gender;
+
+        patientAddresses.push(msg.sender);
 
         emit PatientRegistered(msg.sender,_name, block.timestamp);
     }
@@ -107,6 +151,7 @@ contract PatientsRegistry {
             addedBy: address(0)
         }));
 
+        totalRecordsCount++;
         emit RecordAdded(msg.sender, _recordType, address(0), block.timestamp);
     }
 
@@ -221,6 +266,8 @@ contract PatientsRegistry {
             addedBy: msg.sender
         }));
 
+        totalRecordsCount++;
+
         logs[_patient].push(AccessLog({
             institution: msg.sender,
             institutionName: institutions[msg.sender].name,
@@ -247,4 +294,201 @@ contract PatientsRegistry {
         return(log.institution, log.institutionName, log.timestamp, log.action);
     }
 
+    // ─────────────────────────────────────────────
+    //  RESEARCHER FUNCTIONS
+    // ─────────────────────────────────────────────
+
+    /// @notice Register as a researcher to gain access to anonymized patient datasets
+    function registerResearcher(
+        string calldata _name,
+        string calldata _institution,
+        string calldata _researchField,
+        string calldata _licenseId
+    ) external notResearcher {
+        require(bytes(_name).length > 0, "Name required");
+        require(bytes(_institution).length > 0, "Institution required");
+        require(bytes(_licenseId).length > 0, "License ID required");
+
+        Researcher storage r = researchers[msg.sender];
+        r.registered = true;
+        r.name = _name;
+        r.institution = _institution;
+        r.researchField = _researchField;
+        r.licenseId = _licenseId;
+        r.registeredAt = block.timestamp;
+        r.dataAccessCount = 0;
+
+        emit ResearcherRegistered(msg.sender, _name, _researchField, block.timestamp);
+    }
+
+    function isResearcherRegistered() external view returns (bool) {
+        return researchers[msg.sender].registered;
+    }
+
+    function getResearcherProfile() external view onlyResearcher returns (
+        string memory name,
+        string memory institution,
+        string memory researchField,
+        string memory licenseId,
+        uint256 registeredAt,
+        uint256 dataAccessCount
+    ) {
+        Researcher storage r = researchers[msg.sender];
+        return (r.name, r.institution, r.researchField, r.licenseId, r.registeredAt, r.dataAccessCount);
+    }
+
+    /// @notice Returns global dataset statistics (no PII)
+    function getDatasetStats() external view onlyResearcher returns (
+        uint256 totalPatients,
+        uint256 totalRecords,
+        uint256 lastUpdated
+    ) {
+        return (patientAddresses.length, totalRecordsCount, block.timestamp);
+    }
+
+    /// @notice Returns a batch of anonymized records for a range of patients.
+    ///         All PII (name, DOB, wallet address) is stripped.
+    ///         Only bloodType, gender, recordType, description, institution, and timestamp are returned.
+    /// @param startIndex  First patient index (inclusive)
+    /// @param endIndex    Last patient index (exclusive)
+    function getAnonymizedBatch(uint256 startIndex, uint256 endIndex)
+        external
+        onlyResearcher
+        returns (AnonymizedRecord[] memory)
+    {
+        require(startIndex < endIndex, "Invalid range");
+        uint256 total = patientAddresses.length;
+        if (endIndex > total) endIndex = total;
+
+        // Count total records in range first (to size the array)
+        uint256 count = 0;
+        for (uint256 i = startIndex; i < endIndex; i++) {
+            count += patients[patientAddresses[i]].records.length;
+        }
+
+        AnonymizedRecord[] memory batch = new AnonymizedRecord[](count);
+        uint256 idx = 0;
+
+        for (uint256 i = startIndex; i < endIndex; i++) {
+            Patient storage p = patients[patientAddresses[i]];
+            for (uint256 j = 0; j < p.records.length; j++) {
+                MedicalRecord storage rec = p.records[j];
+                batch[idx] = AnonymizedRecord({
+                    timestamp: rec.timestamp,
+                    recordType: rec.recordType,
+                    description: rec.description,
+                    institution: rec.institution,
+                    bloodType: p.bloodType,
+                    gender: p.gender,
+                    patientIndex: i   // opaque integer, not a wallet address
+                });
+                idx++;
+            }
+        }
+
+        researchers[msg.sender].dataAccessCount++;
+        emit DatasetAccessed(msg.sender, count, block.timestamp);
+        return batch;
+    }
+
+    /// @notice Returns demographic summary counts per blood type and gender (fully aggregated, no PII)
+    function getDemographicsSummary() external view onlyResearcher returns (
+        string[] memory bloodTypes,
+        uint256[] memory bloodTypeCounts,
+        uint256 maleCount,
+        uint256 femaleCount,
+        uint256 otherCount
+    ) {
+        string[8] memory BT = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+        uint256[8] memory btCounts;
+        uint256 males;
+        uint256 females;
+        uint256 others;
+
+        for (uint256 i = 0; i < patientAddresses.length; i++) {
+            Patient storage p = patients[patientAddresses[i]];
+
+            // Gender
+            bytes32 g = keccak256(bytes(p.gender));
+            if (g == keccak256(bytes("Male"))) males++;
+            else if (g == keccak256(bytes("Female"))) females++;
+            else others++;
+
+            // Blood type
+            bytes32 bt = keccak256(bytes(p.bloodType));
+            for (uint256 k = 0; k < 8; k++) {
+                if (bt == keccak256(bytes(BT[k]))) { btCounts[k]++; break; }
+            }
+        }
+
+        bloodTypes = new string[](8);
+        bloodTypeCounts = new uint256[](8);
+        for (uint256 k = 0; k < 8; k++) {
+            bloodTypes[k] = BT[k];
+            bloodTypeCounts[k] = btCounts[k];
+        }
+
+        return (bloodTypes, bloodTypeCounts, males, females, others);
+    }
+
+    /// @notice Returns total count of records per type across all patients (no PII)
+    function getRecordTypeBreakdown() external view onlyResearcher returns (
+        string[] memory recordTypes,
+        uint256[] memory counts
+    ) {
+        string[8] memory RT = ["Diagnosis", "Lab Result", "Prescription", "Vaccination", "Surgery", "Imaging", "Allergy", "Other"];
+        uint256[8] memory rtCounts;
+
+        for (uint256 i = 0; i < patientAddresses.length; i++) {
+            Patient storage p = patients[patientAddresses[i]];
+            for (uint256 j = 0; j < p.records.length; j++) {
+                bytes32 rt = keccak256(bytes(p.records[j].recordType));
+                for (uint256 k = 0; k < 8; k++) {
+                    if (rt == keccak256(bytes(RT[k]))) { rtCounts[k]++; break; }
+                }
+            }
+        }
+
+        recordTypes = new string[](8);
+        counts = new uint256[](8);
+        for (uint256 k = 0; k < 8; k++) {
+            recordTypes[k] = RT[k];
+            counts[k] = rtCounts[k];
+        }
+
+        return (recordTypes, counts);
+    }
+
+    /// @notice Returns an array of monthly record counts (last 12 months, UNIX timestamps bucketed by 30-day windows)
+    function getTimelineData() external view onlyResearcher returns (
+        uint256[12] memory monthTimestamps,
+        uint256[12] memory monthlyCounts
+    ) {
+        uint256 now_ = block.timestamp;
+        uint256 bucket = 30 days;
+
+        for (uint256 m = 0; m < 12; m++) {
+            monthTimestamps[m] = now_ - (11 - m) * bucket;
+        }
+
+        for (uint256 i = 0; i < patientAddresses.length; i++) {
+            Patient storage p = patients[patientAddresses[i]];
+            for (uint256 j = 0; j < p.records.length; j++) {
+                uint256 ts = p.records[j].timestamp;
+                for (uint256 m = 0; m < 12; m++) {
+                    uint256 start = now_ - (12 - m) * bucket;
+                    uint256 end_  = now_ - (11 - m) * bucket;
+                    if (ts >= start && ts < end_) {
+                        monthlyCounts[m]++;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /// @notice Returns total number of registered patients (public, for UI)
+    function getTotalPatients() external view returns (uint256) {
+        return patientAddresses.length;
+    }
 }

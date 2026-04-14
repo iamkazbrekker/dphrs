@@ -64,14 +64,14 @@ export default function KeyCard({ address }) {
 }
 
 const S = {
-    card: { background: "#1e293b", padding: "1.5rem", borderRadius: "0.75rem" },
-    h3: { margin: "0 0 1.25rem", color: "#f1f5f9", fontSize: "1.1rem" },
+    card: { background: "#ffffff", padding: "1.8rem", borderRadius: "1.8rem", boxShadow: "0 4px 15px rgba(0,0,0,0.02)" },
+    h3: { margin: "0 0 1.25rem", color: "#13544a", fontSize: "1.2rem", fontWeight: 600 },
     section: { marginBottom: "1.5rem" },
-    label: { fontWeight: 600, color: "#e2e8f0", marginBottom: "0.25rem", fontSize: "0.9rem" },
-    note: { color: "#94a3b8", fontSize: "0.8rem", margin: "0.25rem 0 0.75rem" },
-    keyBox: { display: "flex", alignItems: "center", gap: "0.75rem", background: "#0f172a", padding: "0.75rem 1rem", borderRadius: "0.5rem", border: "1px solid #334155" },
-    key: { flex: 1, wordBreak: "break-all", color: "#38bdf8", fontSize: "0.8rem", fontFamily: "monospace" },
-    copyBtn: { padding: "0.35rem 0.8rem", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "0.4rem", cursor: "pointer", fontSize: "0.8rem", whiteSpace: "nowrap" },
-    steps: { color: "#94a3b8", fontSize: "0.82rem", paddingLeft: "1.2rem", lineHeight: 1.8 },
-    warning: { background: "#7c2d12", color: "#fca5a5", padding: "0.65rem 1rem", borderRadius: "0.5rem", fontSize: "0.82rem", marginTop: "0.75rem" },
+    label: { fontWeight: 600, color: "#1e293b", marginBottom: "0.25rem", fontSize: "0.95rem" },
+    note: { color: "#475569", fontSize: "0.85rem", margin: "0.25rem 0 0.75rem" },
+    keyBox: { display: "flex", alignItems: "center", gap: "0.75rem", background: "#f8fafc", padding: "0.85rem 1.1rem", borderRadius: "1rem", border: "1px solid #e2e8f0" },
+    key: { flex: 1, wordBreak: "break-all", color: "#256a5c", fontSize: "0.85rem", fontFamily: "monospace", fontWeight: 500 },
+    copyBtn: { padding: "0.5rem 1rem", background: "#badd93", color: "#13544a", border: "none", borderRadius: "0.8rem", cursor: "pointer", fontSize: "0.85rem", whiteSpace: "nowrap", fontWeight: 600 },
+    steps: { color: "#475569", fontSize: "0.85rem", paddingLeft: "1.2rem", lineHeight: 1.8 },
+    warning: { background: "#fee2e2", color: "#991b1b", padding: "0.8rem 1rem", borderRadius: "1rem", fontSize: "0.85rem", marginTop: "0.75rem", border: "1px solid #fecaca" },
 };

@@ -1,6 +1,31 @@
 {
-  "address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+  "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "researcher",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "recordCount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "DatasetAccessed",
+      "type": "event"
+    },
     {
       "anonymous": false,
       "inputs": [
@@ -114,6 +139,37 @@
       "type": "event"
     },
     {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "researcher",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "researchField",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "ResearcherRegistered",
+      "type": "event"
+    },
+    {
       "inputs": [
         {
           "internalType": "string",
@@ -210,6 +266,123 @@
         {
           "internalType": "uint256",
           "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "startIndex",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "endIndex",
+          "type": "uint256"
+        }
+      ],
+      "name": "getAnonymizedBatch",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "recordType",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "description",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "institution",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "bloodType",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "gender",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "patientIndex",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct PatientsRegistry.AnonymizedRecord[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getDatasetStats",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "totalPatients",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalRecords",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "lastUpdated",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getDemographicsSummary",
+      "outputs": [
+        {
+          "internalType": "string[]",
+          "name": "bloodTypes",
+          "type": "string[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "bloodTypeCounts",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maleCount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "femaleCount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "otherCount",
           "type": "uint256"
         }
       ],
@@ -409,6 +582,93 @@
     },
     {
       "inputs": [],
+      "name": "getRecordTypeBreakdown",
+      "outputs": [
+        {
+          "internalType": "string[]",
+          "name": "recordTypes",
+          "type": "string[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "counts",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getResearcherProfile",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "institution",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "researchField",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "licenseId",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "registeredAt",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "dataAccessCount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getTimelineData",
+      "outputs": [
+        {
+          "internalType": "uint256[12]",
+          "name": "monthTimestamps",
+          "type": "uint256[12]"
+        },
+        {
+          "internalType": "uint256[12]",
+          "name": "monthlyCounts",
+          "type": "uint256[12]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getTotalPatients",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "isInstitutionRegistered",
       "outputs": [
         {
@@ -423,6 +683,19 @@
     {
       "inputs": [],
       "name": "isRegistered",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "isResearcherRegistered",
       "outputs": [
         {
           "internalType": "bool",
@@ -485,6 +758,34 @@
         }
       ],
       "name": "registerInstitution",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_name",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_institution",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_researchField",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_licenseId",
+          "type": "string"
+        }
+      ],
+      "name": "registerResearcher",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

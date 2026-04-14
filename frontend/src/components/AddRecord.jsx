@@ -66,9 +66,9 @@ export default function AddRecord({ onAdded }) {
 }
 
 const styles = {
-    form: { display: "flex", flexDirection: "column", gap: "0.75rem", background: "#1e293b", padding: "1.5rem", borderRadius: "0.75rem" },
-    h3: { margin: 0, color: "#f1f5f9", fontSize: "1.05rem" },
-    input: { padding: "0.65rem 0.9rem", borderRadius: "0.5rem", border: "1px solid #334155", background: "#0f172a", color: "#f1f5f9", fontSize: "0.9rem", resize: "vertical" },
-    btn: { padding: "0.65rem", background: "#10b981", color: "#fff", border: "none", borderRadius: "0.5rem", cursor: "pointer", fontWeight: 600 },
-    status: { fontSize: "0.8rem", color: "#fbbf24" }
+    form: { display: "flex", flexDirection: "column", gap: "1rem", background: "#ffffff", padding: "1.8rem", borderRadius: "1.8rem", boxShadow: "0 4px 15px rgba(0,0,0,0.02)" },
+    h3: { margin: 0, color: "#13544a", fontSize: "1.2rem", fontWeight: 600 },
+    input: { padding: "0.8rem 1rem", borderRadius: "1rem", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#1e293b", fontSize: "0.95rem", resize: "vertical", outline: "none" },
+    btn: { padding: "0.8rem", background: "#13544a", color: "#fff", border: "none", borderRadius: "2rem", cursor: "pointer", fontWeight: 600, boxShadow: "0 4px 12px rgba(19,84,74,0.15)" },
+    status: { fontSize: "0.85rem", color: "#13544a", background: "#f8fafc", padding: "0.6rem 1rem", borderRadius: "0.8rem", border: "1px solid #e2e8f0" }
 };

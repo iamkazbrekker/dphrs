@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getContractInstance, getCurrentAddress } from "@/lib/contract";
+import Papa from "papaparse";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, RadarChart, Radar,
@@ -150,45 +151,119 @@ export default function ResearcherDashboard() {
           address: cfgAddr, abi: cfgAbi,
           functionName: "getDatasetStats", account: a,
         });
-        setStats({
+        let bcStats = {
           totalPatients: Number(statsRaw[0]),
           totalRecords: Number(statsRaw[1]),
-        });
+        };
 
         const demRaw = await publicClient.readContract({
           address: cfgAddr, abi: cfgAbi,
           functionName: "getDemographicsSummary", account: a,
         });
-        setDemographics({
+        let bcDem = {
           bloodTypes: demRaw[0].map((bt, i) => ({ name: bt, value: Number(demRaw[1][i]) })),
           gender: [
             { name: "Male", value: Number(demRaw[2]) },
             { name: "Female", value: Number(demRaw[3]) },
             { name: "Other", value: Number(demRaw[4]) },
           ],
-        });
+        };
 
         const rbRaw = await publicClient.readContract({
           address: cfgAddr, abi: cfgAbi,
           functionName: "getRecordTypeBreakdown", account: a,
         });
-        setRecordBreakdown(rbRaw[0].map((rt, i) => ({ name: rt, count: Number(rbRaw[1][i]) })));
+        let bcRb = rbRaw[0].map((rt, i) => ({ name: rt, count: Number(rbRaw[1][i]) }));
 
         const tlRaw = await publicClient.readContract({
           address: cfgAddr, abi: cfgAbi,
           functionName: "getTimelineData", account: a,
         });
         const now = new Date();
-        setTimeline(tlRaw[1].map((cnt, i) => {
+        let bcTl = Array(12).fill(0);
+        tlRaw[1].forEach((cnt, idx) => {
           const m = new Date(now);
-          m.setMonth(m.getMonth() - (11 - i));
-          return { month: MONTH_LABELS[m.getMonth()], records: Number(cnt) };
-        }));
+          m.setMonth(m.getMonth() - (11 - idx));
+          bcTl[m.getMonth()] += Number(cnt);
+        });
+
+        Papa.parse("/indian_diseases_dataset.csv", {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const rows = results.data;
+            const pts = new Set();
+            let mockMale = 0, mockFemale = 0, mockOther = 0;
+            const mockBlood = {};
+            const mockRb = {};
+            const mockTl = Array(12).fill(0);
+            
+            rows.forEach(r => {
+               if(r.patient_id) pts.add(r.patient_id);
+               const g = r.gender;
+               if(g === "Male") mockMale++;
+               else if(g === "Female") mockFemale++;
+               else mockOther++;
+               
+               const b = r.blood_group;
+               if(b) mockBlood[b] = (mockBlood[b] || 0) + 1;
+               
+               const c = r.disease_category;
+               if(c) mockRb[c] = (mockRb[c] || 0) + 1;
+               
+               const mo = r.month;
+               const dIdx = MONTH_LABELS.indexOf(mo?.substring(0, 3));
+               if(dIdx >= 0) mockTl[dIdx]++;
+            });
+
+            setStats({
+               totalPatients: bcStats.totalPatients + pts.size,
+               totalRecords: bcStats.totalRecords + rows.length
+            });
+
+            const combinedBloods = [...bcDem.bloodTypes];
+            Object.keys(mockBlood).forEach(k => {
+               const existing = combinedBloods.find(x => x.name === k);
+               if(existing) existing.value += mockBlood[k];
+               else combinedBloods.push({ name: k, value: mockBlood[k] });
+            });
+
+            setDemographics({
+               bloodTypes: combinedBloods,
+               gender: [
+                  { name: "Male", value: bcDem.gender[0].value + mockMale},
+                  { name: "Female", value: bcDem.gender[1].value + mockFemale},
+                  { name: "Other", value: bcDem.gender[2].value + mockOther}
+               ]
+            });
+            
+            const combinedRb = [...bcRb];
+            Object.keys(mockRb).forEach(k => {
+               const existing = combinedRb.find(x => x.name === k);
+               if(existing) existing.count += mockRb[k];
+               else combinedRb.push({name: k, count: mockRb[k]});
+            });
+            setRecordBreakdown(combinedRb);
+
+            const finalTl = MONTH_LABELS.map((lbl, i) => ({ month: lbl, records: bcTl[i] + mockTl[i] }));
+            setTimeline(finalTl);
+            setLoading(false);
+          },
+          error: (err) => {
+            console.error("Error fetching mock dataset:", err);
+            setStats(bcStats);
+            setDemographics(bcDem);
+            setRecordBreakdown(bcRb);
+            const fallbackTl = MONTH_LABELS.map((lbl, i) => ({ month: lbl, records: bcTl[i] }));
+            setTimeline(fallbackTl);
+            setLoading(false);
+          }
+        });
 
       } catch (err) {
         console.error(err);
         router.push("/");
-      } finally {
         setLoading(false);
       }
     })();
@@ -197,44 +272,76 @@ export default function ResearcherDashboard() {
   }, []);
 
   async function fetchDataset() {
-    setDataLoading(true); setStatus("Fetching anonymized records from blockchain…");
+    setDataLoading(true); setStatus("Fetching anonymized records from blockchain and mock dataset…");
     try {
       const { contract, publicClient, address: a } = await getContractInstance();
       const cfgAddr = (await import("@/lib/contract-config.json")).default.address;
       const cfgAbi  = (await import("@/lib/contract-config.json")).default.abi;
 
-      const totalPats = Number(stats?.totalPatients || 0);
-      if (totalPats === 0) { setStatus("No patient data available on chain yet."); setDataLoading(false); return; }
-
-      const hash = await contract.write.getAnonymizedBatch([BigInt(0), BigInt(totalPats)], { account: a });
-      setStatus("Waiting for transaction confirmation…");
-      await publicClient.waitForTransactionReceipt({ hash });
-
-      const result = await publicClient.simulateContract({
+      const bcStatsRaw = await publicClient.readContract({
         address: cfgAddr, abi: cfgAbi,
-        functionName: "getAnonymizedBatch",
-        args: [BigInt(0), BigInt(totalPats)],
-        account: a,
+        functionName: "getDatasetStats", account: a,
       });
+      const onChainPats = Number(bcStatsRaw[0]);
 
-      const recs = result.result.map(r => ({
-        timestamp: r.timestamp,
-        recordType: r.recordType,
-        description: r.description,
-        institution: r.institution,
-        bloodType: r.bloodType,
-        gender: r.gender,
-        patientIndex: Number(r.patientIndex),
-      }));
-      setAnonymizedRecords(recs);
+      let recs = [];
+      if (onChainPats > 0) {
+        const hash = await contract.write.getAnonymizedBatch([BigInt(0), BigInt(onChainPats)], { account: a });
+        setStatus("Waiting for transaction confirmation…");
+        await publicClient.waitForTransactionReceipt({ hash });
 
-      const prof = await contract.read.getResearcherProfile({ account: a });
-      setProfile(prev => ({ ...prev, dataAccessCount: Number(prof[5]) }));
-      setStatus(`✓ Successfully fetched ${recs.length} anonymized records.`);
-      setActiveTab("dataset");
+        const result = await publicClient.simulateContract({
+          address: cfgAddr, abi: cfgAbi,
+          functionName: "getAnonymizedBatch",
+          args: [BigInt(0), BigInt(onChainPats)],
+          account: a,
+        });
+
+        recs = result.result.map(r => ({
+          timestamp: r.timestamp,
+          recordType: r.recordType,
+          description: r.description,
+          institution: r.institution,
+          bloodType: r.bloodType,
+          gender: r.gender,
+          patientIndex: Number(r.patientIndex),
+        }));
+      }
+
+      Papa.parse("/indian_diseases_dataset.csv", {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          complete: async (res) => {
+             const mockRecs = res.data.map((r, i) => ({
+                 timestamp: r.diagnosis_date ? Math.floor(new Date(r.diagnosis_date).getTime() / 1000) : Math.floor(Date.now()/1000),
+                 recordType: r.disease_category || "Unknown",
+                 description: r.disease_name || r.symptoms || "",
+                 institution: r.hospital_type || "Unknown",
+                 bloodType: r.blood_group || "Unknown",
+                 gender: r.gender || "Unknown",
+                 patientIndex: r.patient_id || ("MOCK-"+i)
+             }));
+             const combined = [...recs, ...mockRecs];
+             setAnonymizedRecords(combined);
+             
+             const prof = await contract.read.getResearcherProfile({ account: a });
+             setProfile(prev => ({ ...prev, dataAccessCount: Number(prof[5]) }));
+             setStatus(`✓ Successfully fetched ${combined.length} anonymized records.`);
+             setActiveTab("dataset");
+             setDataLoading(false);
+          },
+          error: async (err) => {
+             setAnonymizedRecords(recs);
+             const prof = await contract.read.getResearcherProfile({ account: a });
+             setProfile(prev => ({ ...prev, dataAccessCount: Number(prof[5]) }));
+             setStatus(`✓ Successfully fetched ${recs.length} blockchain records (Mock failed).`);
+             setActiveTab("dataset");
+             setDataLoading(false);
+          }
+      });
     } catch (err) {
       setStatus("Error: " + (err.shortMessage || err.message));
-    } finally {
       setDataLoading(false);
     }
   }

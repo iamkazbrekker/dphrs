@@ -47,7 +47,6 @@ contract PatientsRegistry {
         string action;
     }
 
-    // Anonymized record — no patient name, DOB, or wallet address
     struct AnonymizedRecord {
         uint256 timestamp;
         string recordType;
@@ -70,7 +69,6 @@ contract PatientsRegistry {
     mapping(address => Researcher) private researchers;
     mapping(address => AccessLog[]) private logs;
 
-    // Internal list of all patient addresses (for researcher enumeration)
     address[] private patientAddresses;
     uint256 private totalRecordsCount;
 
